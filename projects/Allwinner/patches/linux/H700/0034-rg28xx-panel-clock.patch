@@ -1,27 +1,82 @@
-diff -rupbN linux.orig/drivers/gpu/drm/panel/panel-sitronix-st7701.c linux/drivers/gpu/drm/panel/panel-sitronix-st7701.c
---- linux.orig/drivers/gpu/drm/panel/panel-sitronix-st7701.c	2024-11-09 15:37:39.898556064 +0000
-+++ linux/drivers/gpu/drm/panel/panel-sitronix-st7701.c	2024-11-17 14:42:52.356446105 +0000
-@@ -1036,17 +1036,17 @@ static const struct st7701_panel_desc rg
+From 6412eb0ae4a3b2f3b247b897ecfae44229204b5d Mon Sep 17 00:00:00 2001
+From: Hendrik Borghorst <hendrikborghorst@gmail.com>
+Date: Fri, 17 Jan 2025 12:33:42 +0100
+Subject: [PATCH] Fix panel
+
+---
+ drivers/gpu/drm/panel/panel-sitronix-st7701.c | 18 ++++++++++--------
+ drivers/gpu/drm/sun4i/sun4i_tcon.c            |  4 ++--
+ 2 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/gpu/drm/panel/panel-sitronix-st7701.c b/drivers/gpu/drm/panel/panel-sitronix-st7701.c
+index 1f72ef7ca74c..777011dbfb35 100644
+--- a/drivers/gpu/drm/panel/panel-sitronix-st7701.c
++++ b/drivers/gpu/drm/panel/panel-sitronix-st7701.c
+@@ -478,6 +478,8 @@ static void rg28xx_gip_sequence(struct st7701 *st7701)
+ 
+ 	st7701_switch_cmd_bkx(st7701, true, 0);
+ 	ST7701_WRITE(st7701, 0xC3, 0x02, 0x10, 0x02);
++	// Set porch control to mode values (front porch:16, back porch:14)
++	ST7701_WRITE(st7701, 0xC1, 16, 14);
+ 	ST7701_WRITE(st7701, 0xC7, 0x04);
+ 	ST7701_WRITE(st7701, 0xCC, 0x10);
+ 
+@@ -1036,17 +1038,17 @@ static const struct st7701_panel_desc rg_arc_desc = {
  };
  
  static const struct drm_display_mode rg28xx_mode = {
 -	.clock		= 22325,
-+	.clock		= 24000,
++	.clock		= 20828,
  
  	.hdisplay	= 480,
 -	.hsync_start	= 480 + 40,
 -	.hsync_end	= 480 + 40 + 4,
 -	.htotal		= 480 + 40 + 4 + 20,
-+	.hsync_start	= 480 + 50,
-+	.hsync_end	= 480 + 50 + 6,
-+	.htotal		= 480 + 50 + 6 + 50,
++	.hsync_start	= 480 + 16,
++	.hsync_end	= 480 + 16 + 4,
++	.htotal		= 480 + 16 + 4 + 12,
  
  	.vdisplay	= 640,
- 	.vsync_start	= 640 + 2,
+-	.vsync_start	= 640 + 2,
 -	.vsync_end	= 640 + 2 + 40,
 -	.vtotal		= 640 + 2 + 40 + 16,
-+	.vsync_end	= 640 + 24 + 6,
-+	.vtotal		= 640 + 24 + 6 + 16,
++	.vsync_start	= 640 + 16,
++	.vsync_end	= 640 + 16 + 8,
++	.vtotal		= 640 + 16 + 8 + 14,
  
  	.width_mm	= 44,
  	.height_mm	= 58,
+@@ -1119,7 +1121,7 @@ static const struct st7701_panel_desc rg28xx_desc = {
+ 		CFIELD_PREP(ST7701_CMD2_BK0_GAMCTRL_AJ_MASK, 0) |
+ 		CFIELD_PREP(ST7701_CMD2_BK0_GAMCTRL_VC255_MASK, 0x1f)
+ 	},
+-	.nlinv = 7,
++	.nlinv = 0,
+ 	.vop_uv = 4800000,
+ 	.vcom_uv = 1512500,
+ 	.vgh_mv = 15000,
+diff --git a/drivers/gpu/drm/sun4i/sun4i_tcon.c b/drivers/gpu/drm/sun4i/sun4i_tcon.c
+index a1a2c845ade0..30d34d781bb2 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_tcon.c
++++ b/drivers/gpu/drm/sun4i/sun4i_tcon.c
+@@ -536,7 +536,7 @@ static void sun4i_tcon0_mode_set_rgb(struct sun4i_tcon *tcon,
+ 	 * This is called a backporch in the register documentation,
+ 	 * but it really is the back porch + hsync
+ 	 */
+-	bp = mode->crtc_htotal - mode->crtc_hsync_start;
++	bp = mode->crtc_htotal - mode->crtc_hsync_end;
+ 	DRM_DEBUG_DRIVER("Setting horizontal total %d, backporch %d\n",
+ 			 mode->crtc_htotal, bp);
+ 
+@@ -549,7 +549,7 @@ static void sun4i_tcon0_mode_set_rgb(struct sun4i_tcon *tcon,
+ 	 * This is called a backporch in the register documentation,
+ 	 * but it really is the back porch + hsync
+ 	 */
+-	bp = mode->crtc_vtotal - mode->crtc_vsync_start;
++	bp = mode->crtc_vtotal - mode->crtc_vsync_end;
+ 	DRM_DEBUG_DRIVER("Setting vertical total %d, backporch %d\n",
+ 			 mode->crtc_vtotal, bp);
+ 
+-- 
+2.45.2
+
